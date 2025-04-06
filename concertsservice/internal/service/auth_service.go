@@ -21,6 +21,7 @@ type AuthService interface {
 	Login(email, password string) (string, string, error)
 	Logout(userID int64) error
 	ValidateToken(token string) (int64, error)
+	SetAutoWithdraw(partnerID int, enabled bool) error
 }
 
 type authService struct {
@@ -83,7 +84,6 @@ func (s *authService) Logout(userID int64) error {
 
 func (s *authService) ValidateToken(tokenString string) (int64, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Validate signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
@@ -114,4 +114,10 @@ func (s *authService) generateJWT(userID int64, duration time.Duration) (string,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(s.jwtSecret))
+}
+
+// SetAutoWithdraw will update the auto withdraw setting for the partner.
+func (s *authService) SetAutoWithdraw(partnerID int, enabled bool) error {
+	// เชื่อมต่อไปยัง repository เพื่อแก้ไขค่าการตั้งค่า auto_withdraw
+	return s.repo.SetAutoWithdraw(partnerID, enabled)
 }

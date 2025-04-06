@@ -8,7 +8,7 @@ import (
 )
 
 type CommissionService interface {
-	GetCommissions(ctx context.Context, partnerID string) ([]models.Commission, error)
+	GetCommissions(ctx context.Context, partnerID int) ([]models.Commission, error)
 }
 
 type commissionService struct {
@@ -20,6 +20,6 @@ func NewCommissionService(repo repository.CommissionRepository) CommissionServic
 	return &commissionService{repo: repo}
 }
 
-func (s *commissionService) GetCommissions(ctx context.Context, partnerID string) ([]models.Commission, error) {
+func (s *commissionService) GetCommissions(ctx context.Context, partnerID int) ([]models.Commission, error) {
 	return s.repo.GetCommissions(ctx, partnerID)
 }

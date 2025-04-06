@@ -3,8 +3,11 @@ package models
 import "time"
 
 type Booking struct {
-	ID        string    `json:"id"`
-	ConcertID string    `json:"concert_id"` // เพิ่มฟิลด์ ConcertID
-	Date      time.Time `json:"date"`
-	Amount    float64   `json:"amount"`
+	ID          int       `json:"id"`
+	ConcertID   int       `json:"concert_id"`
+	PartnerID   int       `json:"partner_id"`
+	Tickets     int       `json:"tickets"`
+	Amount      float64   `json:"amount"`
+	BookingAt   time.Time `json:"booking_at"`
+	BookingDate time.Time `json:"booking_date"`
 }

@@ -1,6 +1,10 @@
 package models
 
+import "time"
+
 type WithdrawRequest struct {
-	PartnerID int     `json:"partner_id"`
-	Amount    float64 `json:"amount"`
+	ID        int       `json:"id"`
+	PartnerID int       `json:"partner_id"`
+	Amount    float64   `json:"amount"`
+	CreatedAt time.Time `json:"created_at"`
 }

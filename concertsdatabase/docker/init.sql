@@ -1,4 +1,7 @@
--- สร้างตาราง partners
+-- Drop All Tables (for clean start)
+DROP TABLE IF EXISTS withdraw_requests, auto_withdraw, bookings, partner_rewards, sales_by_source, sales_reports, commissions, content_templates, banners, concerts, categories, partner_balances, partners, users CASCADE;
+
+-- partners
 CREATE TABLE partners (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -7,19 +10,18 @@ CREATE TABLE partners (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- ตารางเก็บ balance ของ partner
 CREATE TABLE partner_balances (
     partner_id INT PRIMARY KEY REFERENCES partners(id),
     balance FLOAT NOT NULL DEFAULT 0
 );
 
--- สร้างตาราง categories
+-- categories
 CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL
 );
 
--- สร้างตาราง concerts
+-- concerts
 CREATE TABLE concerts (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -31,14 +33,13 @@ CREATE TABLE concerts (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Trigger อัพเดต updated_at ของ concerts
 CREATE OR REPLACE FUNCTION update_concerts_modtime()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = now();
     RETURN NEW;
 END;
-$$ LANGUAGE 'plpgsql';
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_concerts_modtime
 BEFORE UPDATE ON concerts
@@ -60,7 +61,7 @@ BEGIN
     NEW.updated_at = now();
     RETURN NEW;
 END;
-$$ LANGUAGE 'plpgsql';
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_banners_modtime
 BEFORE UPDATE ON banners
@@ -82,7 +83,7 @@ BEGIN
     NEW.updated_at = now();
     RETURN NEW;
 END;
-$$ LANGUAGE 'plpgsql';
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_content_templates_modtime
 BEFORE UPDATE ON content_templates
@@ -129,13 +130,27 @@ CREATE TABLE bookings (
     date DATE
 );
 
--- คำนวณค่า date จาก booking_at
-UPDATE bookings SET date = booking_at::date;
+-- auto update date field
+CREATE OR REPLACE FUNCTION update_booking_date()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.date = NEW.booking_at::date;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_booking_date
+BEFORE INSERT OR UPDATE ON bookings
+FOR EACH ROW
+EXECUTE FUNCTION update_booking_date();
 
 -- auto_withdraw
 CREATE TABLE auto_withdraw (
+    partner_id INT PRIMARY KEY REFERENCES partners(id),
     enabled BOOLEAN NOT NULL DEFAULT FALSE
 );
+
+INSERT INTO auto_withdraw (enabled) VALUES (TRUE);
 
 -- withdraw_requests
 CREATE TABLE withdraw_requests (
@@ -144,6 +159,7 @@ CREATE TABLE withdraw_requests (
     amount FLOAT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
 
 -- users
 CREATE TABLE users (
@@ -154,44 +170,73 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- function update updated_at
-CREATE OR REPLACE FUNCTION update_modified_column()
+CREATE OR REPLACE FUNCTION update_users_modtime()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = now();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
 
--- trigger update updated_at
 CREATE TRIGGER update_users_modtime
-    BEFORE UPDATE ON users
-    FOR EACH ROW
-    EXECUTE FUNCTION update_modified_column();
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION update_users_modtime();
 
--- index
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_name ON users(name);
 
--- ข้อมูลตัวอย่าง categories
+-- -----------------------------
+-- Sample Data
+-- -----------------------------
+
 INSERT INTO categories (name) VALUES ('Rock'), ('Pop');
 
--- ข้อมูลตัวอย่าง partners
 INSERT INTO partners (name, api_key, token_key) VALUES
 ('Partner A', 'apikey_a', 'token_a'),
 ('Partner B', 'apikey_b', 'token_b');
 
--- ข้อมูล balance เริ่มต้น
 INSERT INTO partner_balances (partner_id, balance) VALUES
-(1, 0),
-(2, 0);
+(1, 0), (2, 0);
 
--- ข้อมูลตัวอย่าง concerts
-INSERT INTO concerts (name, location, date, partner_id, category_id) VALUES 
-('Concert 1', 'Location 1', '2025-05-10 19:00:00', 1, 1),
-('Concert 2', 'Location 2', '2025-06-15 18:30:00', 2, 2);
+INSERT INTO concerts (name, location, date, partner_id, category_id) VALUES
+('MY FIRST STORY ASIA TOUR 2025 IN BANGKOK', 'ธันเดอร์โดม เมืองทองธานี', '2025-07-12 19:00:00', 1, 1),
+('Tyler, The Creator - CHROMAKOPIA : THE WORLD TOUR', 'อิมแพ็ค อารีน่า', '2025-09-16 18:00:00', 2, 2);
 
--- ข้อมูลตัวอย่าง users
-INSERT INTO users (name, email) VALUES 
-('ศศิมา พังยาง', 'sasima@example.com'),
+INSERT INTO users (name, email) VALUES
+('ศศิมา พังยาง', 'sasima@example.com');
 
+INSERT INTO banners (image_url, link) VALUES
+('https://cdn.example.com/banner1.jpg', 'https://partner-a.com/promotion'),
+('https://cdn.example.com/banner2.jpg', 'https://partner-b.com/event');
+
+INSERT INTO content_templates (name, description) VALUES
+('Standard Template', 'Basic content template for concert promotion'),
+('Premium Template', 'Premium content template with rich media');
+
+INSERT INTO commissions (partner_id, amount, date_from) VALUES
+(1, 500.00, '2025-04-01'),
+(2, 800.00, '2025-04-01');
+
+INSERT INTO sales_reports (product, amount, sales_date) VALUES
+('Concert 1 Ticket', 3000.00, '2025-04-01 10:00:00'),
+('Concert 2 Ticket', 4500.00, '2025-04-02 11:00:00');
+
+INSERT INTO sales_by_source (source, total_sales) VALUES
+('Facebook Ads', 4000.00),
+('Google Ads', 3500.00);
+
+INSERT INTO partner_rewards (amount, partner_id) VALUES
+(100.00, 1),
+(200.00, 2);
+
+INSERT INTO bookings (concert_id, partner_id, tickets, amount, booking_at) VALUES
+(1, 1, 2, 2000.00, '2025-04-05 14:00:00'),
+(2, 2, 3, 4500.00, '2025-04-06 16:00:00');
+
+INSERT INTO withdraw_requests (partner_id, amount) VALUES
+(1, 1000.00),
+(2, 1500.00);
+
+-- เพิ่มข้อมูลในตาราง auto_withdraw สำหรับ partner ที่มี id 1
+INSERT INTO auto_withdraw (partner_id, enabled) VALUES (1, TRUE);

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"concerts/internal/repository"
 	"concerts/internal/service"
 	"net/http"
 	"strconv"
@@ -9,28 +10,39 @@ import (
 )
 
 type PartnerHandler struct {
-	Service service.PartnerService
+	Service      service.PartnerService
+	WithdrawRepo repository.WithdrawRepository
 }
 
-func NewPartnerHandler(service service.PartnerService) *PartnerHandler {
-	return &PartnerHandler{Service: service}
+func NewPartnerHandler(service service.PartnerService, withdrawRepo repository.WithdrawRepository) *PartnerHandler {
+	return &PartnerHandler{
+		Service:      service,
+		WithdrawRepo: withdrawRepo,
+	}
 }
 
 func (h *PartnerHandler) GetPartnerBalance(c *gin.Context) {
-	partnerID := c.DefaultQuery("partner_id", "")
+	partnerIDstr := c.Param("partner_id")
+	partnerID, err := strconv.Atoi(partnerIDstr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid partner_id"})
+		return
+	}
+
 	balance, err := h.Service.GetPartnerBalance(partnerID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch partner balance"})
 		return
 	}
+
 	c.JSON(http.StatusOK, balance)
 }
 
-// ใน handler/PartnerHandler.go
 func (h *PartnerHandler) GetBookings(c *gin.Context) {
-	partnerID := c.DefaultQuery("partner_id", "")
-	if partnerID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Partner ID is required"})
+	partnerIDstr := c.Param("partner_id")
+	partnerID, err := strconv.Atoi(partnerIDstr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid partner_id"})
 		return
 	}
 
@@ -44,56 +56,86 @@ func (h *PartnerHandler) GetBookings(c *gin.Context) {
 }
 
 func (h *PartnerHandler) GetPartnerRewards(c *gin.Context) {
-	partnerID := c.DefaultQuery("partner_id", "") // ดึงค่า partner_id จาก query parameter
-	if partnerID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Partner ID is required"})
+	partnerIDstr := c.Param("partner_id")
+	partnerID, err := strconv.Atoi(partnerIDstr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid partner_id"})
 		return
 	}
 
-	rewards, err := h.Service.GetPartnerRewards(partnerID) // เรียกฟังก์ชันใน PartnerService เพื่อดึงข้อมูลรางวัล
+	rewards, err := h.Service.GetPartnerRewards(partnerID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch partner rewards"})
 		return
 	}
 
-	c.JSON(http.StatusOK, rewards) // ส่งข้อมูลรางวัลกลับไปใน response
+	c.JSON(http.StatusOK, rewards)
 }
 
 func (h *PartnerHandler) SetAutoWithdraw(c *gin.Context) {
-	partnerID := c.PostForm("partner_id")
-	thresholdStr := c.PostForm("threshold")
-	withdrawalMethod := c.PostForm("withdrawal_method")
-
-	// แปลง threshold เป็น float64
-	threshold, err := strconv.ParseFloat(thresholdStr, 64)
+	partnerIDstr := c.Param("partner_id")
+	partnerID, err := strconv.Atoi(partnerIDstr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid threshold"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid partner_id"})
 		return
 	}
 
-	err = h.Service.SetAutoWithdraw(partnerID, threshold, withdrawalMethod)
+	enabledStr := c.PostForm("enabled")
+	enabled, err := strconv.ParseBool(enabledStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enabled flag"})
+		return
+	}
+
+	err = h.Service.SetAutoWithdraw(partnerID, enabled)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set auto withdrawal"})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{"status": "Auto withdrawal set successfully"})
 }
 
-func (h *PartnerHandler) RequestWithdrawal(c *gin.Context) {
-	partnerID := c.PostForm("partner_id")
-	amountStr := c.PostForm("amount")
-
-	// แปลง amount เป็น float64
-	amount, err := strconv.ParseFloat(amountStr, 64)
+// CreateWithdrawRequest สร้างการถอนเงิน
+func (h *PartnerHandler) CreateWithdrawRequest(c *gin.Context) {
+	partnerIDstr := c.Param("partner_id")
+	partnerID, err := strconv.Atoi(partnerIDstr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid amount"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid partner ID"})
 		return
 	}
 
-	err = h.Service.RequestWithdrawal(partnerID, amount)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to request withdrawal"})
+	var request struct {
+		Amount float64 `json:"amount"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "Withdrawal request successful"})
+
+	err = h.WithdrawRepo.CreateWithdrawRequest(partnerID, request.Amount)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Withdraw request created successfully"})
+}
+
+// GetWithdrawRequests ดึงรายการการถอนเงิน
+func (h *PartnerHandler) GetWithdrawRequests(c *gin.Context) {
+	partnerIDstr := c.Param("partner_id")
+	partnerID, err := strconv.Atoi(partnerIDstr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid partner ID"})
+		return
+	}
+
+	withdrawRequests, err := h.WithdrawRepo.GetWithdrawRequests(partnerID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, withdrawRequests)
 }

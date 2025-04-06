@@ -3,6 +3,7 @@ package handler
 import (
 	"concerts/internal/service"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,8 +17,9 @@ func NewCommissionHandler(service service.CommissionService) *CommissionHandler 
 }
 
 func (h *CommissionHandler) GetCommissions(c *gin.Context) {
-	partnerID := c.DefaultQuery("partner_id", "")
-	if partnerID == "" {
+	partnerIDstr := c.Param("partner_id")
+	partnerID, err := strconv.Atoi(partnerIDstr)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "partner_id is required"})
 		return
 	}

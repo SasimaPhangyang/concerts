@@ -1,5 +1,6 @@
 package models
 
 type AutoWithdraw struct {
-	Enabled bool `json:"enabled"`
+	PartnerID int  `json:"partner_id"`
+	Enabled   bool `json:"enabled"`
 }

@@ -14,6 +14,7 @@ type AuthRepository interface {
 	Create(name, email, password string) error
 	StoreToken(userID int64, refreshToken string) error
 	DeleteToken(userID int64) error
+	SetAutoWithdraw(partnerID int, enabled bool) error // เพิ่มฟังก์ชันนี้
 }
 
 type authRepository struct {
@@ -67,5 +68,16 @@ func (r *authRepository) DeleteToken(userID int64) error {
 		DELETE FROM partner_tokens
 		WHERE user_id = $1
 	`, userID)
+	return err
+}
+
+// SetAutoWithdraw ตั้งค่าการถอนอัตโนมัติของ partner
+func (r *authRepository) SetAutoWithdraw(partnerID int, enabled bool) error {
+	_, err := r.db.Exec(`
+		INSERT INTO auto_withdraw (partner_id, enabled)
+		VALUES ($1, $2)
+		ON CONFLICT (partner_id) 
+		DO UPDATE SET enabled = $2
+	`, partnerID, enabled)
 	return err
 }

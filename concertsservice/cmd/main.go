@@ -53,7 +53,7 @@ func main() {
 	contentTemplateHandler := handler.NewContentTemplateHandler(contentTemplateService)
 	commissionHandler := handler.NewCommissionHandler(commissionService)
 	reportHandler := handler.NewReportHandler(reportService)
-	partnerHandler := handler.NewPartnerHandler(partnerService)
+	partnerHandler := handler.NewPartnerHandler(partnerService, withdrawRepo)
 	authHandler := handler.NewAuthHandler(authService)
 
 	// สร้าง Router
@@ -80,30 +80,30 @@ func main() {
 	// Protected routes ต้องใช้ Bearer Token
 	protected := r.Group("/api/v1", middleware.BearerAuth(cfg.APIToken))
 	{
-		protected.GET("/internal/users", userHandler.GetAllUsers)
-		protected.GET("/internal/users/:id", userHandler.GetUserByID)
-		protected.POST("/internal/users", userHandler.CreateUser)
-		protected.PUT("/internal/users/:id", userHandler.UpdateUser)
-		protected.DELETE("/internal/users/:id", userHandler.DeleteUser)
+		protected.GET("/internal/users", userHandler.GetAllUsers)       //
+		protected.GET("/internal/users/:id", userHandler.GetUserByID)   //
+		protected.POST("/internal/users", userHandler.CreateUser)       //
+		protected.PUT("/internal/users/:id", userHandler.UpdateUser)    //
+		protected.DELETE("/internal/users/:id", userHandler.DeleteUser) //
 
-		protected.GET("/external/concerts", concertHandler.GetAllConcerts)
-		protected.GET("/external/search", concertHandler.SearchConcerts)
+		protected.GET("/external/concerts", concertHandler.GetAllConcerts) //
+		protected.GET("/external/search", concertHandler.SearchConcerts)   //
 
-		protected.GET("/external/banners", bannerHandler.GetBanners)
+		protected.GET("/external/banners", bannerHandler.GetBanners) //
 
-		protected.GET("/external/content-templates", contentTemplateHandler.GetContentTemplates)
+		protected.GET("/external/content-templates", contentTemplateHandler.GetContentTemplates) //
 
-		protected.GET("/external/commissions", commissionHandler.GetCommissions)
+		protected.GET("/external/commissions/:partner_id", commissionHandler.GetCommissions) //
 
-		protected.GET("/external/partner/rewards", partnerHandler.GetPartnerRewards)
-		protected.GET("/external/bookings", partnerHandler.GetBookings)
+		protected.GET("/external/partner/rewards/:partner_id", partnerHandler.GetPartnerRewards) //
+		protected.GET("/external/partner/bookings/:partner_id", partnerHandler.GetBookings)
 
 		protected.GET("/external/reports/sales", reportHandler.GetSalesReport)
-		protected.GET("/external/reports/sales-by-source", reportHandler.GetSalesBySource)
+		protected.GET("/external/reports/sales-by-source", reportHandler.GetSalesBySource) //
 
-		protected.GET("/external/partner/balance", partnerHandler.GetPartnerBalance)
-		protected.POST("/external/partner/auto-withdraw", partnerHandler.SetAutoWithdraw)
-		protected.POST("/external/partner/request-withdrawal", partnerHandler.RequestWithdrawal)
+		protected.GET("/external/partner/balance/:partner_id", partnerHandler.GetPartnerBalance)
+		protected.POST("/external/partner/auto-withdraw/:partner_id", partnerHandler.SetAutoWithdraw)
+		protected.POST("/external/partner/request-withdrawal/:partner_id", partnerHandler.CreateWithdrawRequest)
 
 	}
 

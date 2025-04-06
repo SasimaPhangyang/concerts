@@ -1,14 +1,14 @@
 package models
 
-// SalesReport ใช้สำหรับรายงานยอดขายโดยระบุวันที่และรหัสอีเวนต์
+// SalesReport
 type SalesReport struct {
-	Date        string  `json:"date"`         // วันที่
-	EventID     string  `json:"event_id"`     // รหัสอีเวนต์
-	SalesAmount float64 `json:"sales_amount"` // ยอดขาย
+	Product   string  `json:"product"`    // ชื่อสินค้า
+	Amount    float64 `json:"amount"`     // ยอดขาย
+	SalesDate string  `json:"sales_date"` // วันที่ขาย (timestamp)
 }
 
-// SalesBySourceReport ใช้สำหรับรายงานยอดขายแยกตามแหล่งที่มา
-type SalesBySourceReport struct {
-	Source      string  `json:"source"`       // แหล่งที่มาของยอดขาย
-	SalesAmount float64 `json:"sales_amount"` // ยอดขาย
+// SalesBySource
+type SalesBySource struct {
+	Source     string  `json:"source"`      // แหล่งที่มา
+	TotalSales float64 `json:"total_sales"` // ยอดขายรวม
 }
