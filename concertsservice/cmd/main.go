@@ -71,20 +71,20 @@ func main() {
 	// Auth API (No Auth)
 	auth := r.Group("/api/v1/auth")
 	{
-		auth.POST("/register", authHandler.Register)
-		auth.POST("/login", authHandler.Login)
-		auth.GET("/validate-token", middleware.JWTAuth(authService), authHandler.ValidateToken)
-		auth.POST("/logout", middleware.JWTAuth(authService), authHandler.Logout)
+		auth.POST("/internal/register", authHandler.Register)
+		auth.POST("/internal/login", authHandler.Login)
+		auth.GET("/internal/validate-token", middleware.JWTAuth(authService), authHandler.ValidateToken)
+		auth.POST("/internal/logout", middleware.JWTAuth(authService), authHandler.Logout)
 	}
 
 	// Protected routes ต้องใช้ Bearer Token
 	protected := r.Group("/api/v1", middleware.BearerAuth(cfg.APIToken))
 	{
-		protected.GET("/users", userHandler.GetAllUsers)
-		protected.GET("/users/:id", userHandler.GetUserByID)
-		protected.POST("/users", userHandler.CreateUser)
-		protected.PUT("/users/:id", userHandler.UpdateUser)
-		protected.DELETE("/users/:id", userHandler.DeleteUser)
+		protected.GET("/internal/users", userHandler.GetAllUsers)
+		protected.GET("/internal/users/:id", userHandler.GetUserByID)
+		protected.POST("/internal/users", userHandler.CreateUser)
+		protected.PUT("/internal/users/:id", userHandler.UpdateUser)
+		protected.DELETE("/internal/users/:id", userHandler.DeleteUser)
 
 		protected.GET("/external/concerts", concertHandler.GetAllConcerts)
 		protected.GET("/external/search", concertHandler.SearchConcerts)
