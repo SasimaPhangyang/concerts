@@ -150,7 +150,6 @@ CREATE TABLE auto_withdraw (
     enabled BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-INSERT INTO auto_withdraw (enabled) VALUES (TRUE);
 
 -- withdraw_requests
 CREATE TABLE withdraw_requests (
@@ -238,5 +237,6 @@ INSERT INTO withdraw_requests (partner_id, amount) VALUES
 (1, 1000.00),
 (2, 1500.00);
 
--- เพิ่มข้อมูลในตาราง auto_withdraw สำหรับ partner ที่มี id 1
-INSERT INTO auto_withdraw (partner_id, enabled) VALUES (1, TRUE);
+INSERT INTO auto_withdraw (partner_id, enabled)
+SELECT 1, TRUE
+WHERE NOT EXISTS (SELECT 1 FROM auto_withdraw WHERE partner_id = 1);
