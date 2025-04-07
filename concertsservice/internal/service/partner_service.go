@@ -3,6 +3,7 @@ package service
 import (
 	"concerts/internal/models"
 	"concerts/internal/repository"
+	"context"
 	"errors"
 	"fmt"
 )
@@ -82,9 +83,9 @@ func (s *partnerService) GetPartnerRewards(partnerID int) ([]models.Reward, erro
 }
 
 func (s *partnerService) GetBookings(partnerID int) ([]models.Booking, error) {
-	bookings, err := s.bookingRepo.GetBookings(partnerID)
+	bookings, err := s.bookingRepo.GetBookings(context.Background(), partnerID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetching bookings for partner %d: %w", partnerID, err)
 	}
 	return bookings, nil
 }

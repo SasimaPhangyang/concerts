@@ -9,5 +9,5 @@ type Booking struct {
 	Tickets     int       `json:"tickets"`
 	Amount      float64   `json:"amount"`
 	BookingAt   time.Time `json:"booking_at"`
-	BookingDate time.Time `json:"booking_date"`
+	BookingDate time.Time `json:"date"`
 }

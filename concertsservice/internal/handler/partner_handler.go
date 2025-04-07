@@ -39,6 +39,7 @@ func (h *PartnerHandler) GetPartnerBalance(c *gin.Context) {
 }
 
 func (h *PartnerHandler) GetBookings(c *gin.Context) {
+	// ดึง partner_id จาก URL parameters
 	partnerIDstr := c.Param("partner_id")
 	partnerID, err := strconv.Atoi(partnerIDstr)
 	if err != nil {
@@ -46,6 +47,20 @@ func (h *PartnerHandler) GetBookings(c *gin.Context) {
 		return
 	}
 
+	// ดึง partner_user_id จาก context ที่ตรวจสอบ JWT token
+	partnerUserID, exists := c.Get("partner_user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Partner user ID not found in context"})
+		return
+	}
+
+	// ตรวจสอบว่า partner_user_id ตรงกับ partner_id ใน URL หรือไม่
+	if partnerUserID.(int) != partnerID {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Invalid partner user ID"})
+		return
+	}
+
+	// ดึงข้อมูลการจอง
 	bookings, err := h.Service.GetBookings(partnerID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch bookings"})

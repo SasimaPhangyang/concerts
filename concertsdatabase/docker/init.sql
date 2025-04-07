@@ -185,6 +185,27 @@ EXECUTE FUNCTION update_users_modtime();
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_name ON users(name);
 
+-- ตาราง register
+CREATE TABLE partner_users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+--ตาราง token
+CREATE TABLE tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES partner_users(id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    is_valid BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expired_at TIMESTAMP
+);
+
 -- -----------------------------
 -- Sample Data
 -- -----------------------------
@@ -231,7 +252,7 @@ INSERT INTO partner_rewards (amount, partner_id) VALUES
 
 INSERT INTO bookings (concert_id, partner_id, tickets, amount, booking_at) VALUES
 (1, 1, 2, 2000.00, '2025-04-05 14:00:00'),
-(2, 2, 3, 4500.00, '2025-04-06 16:00:00');
+(2, 2, 1, 4500.00, '2025-04-06 16:00:00');
 
 INSERT INTO withdraw_requests (partner_id, amount) VALUES
 (1, 1000.00),
@@ -240,3 +261,11 @@ INSERT INTO withdraw_requests (partner_id, amount) VALUES
 INSERT INTO auto_withdraw (partner_id, enabled)
 SELECT 1, TRUE
 WHERE NOT EXISTS (SELECT 1 FROM auto_withdraw WHERE partner_id = 1);
+
+INSERT INTO partner_users (email, password, name, phone)
+VALUES 
+('sandta@example.com', 'sandta_password_123', 'sandta', '0812345678');
+
+INSERT INTO tokens (user_id, token, is_valid, expired_at)
+VALUES 
+(1, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', TRUE, '2025-12-31 23:59:59');

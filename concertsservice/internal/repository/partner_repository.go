@@ -104,7 +104,11 @@ func (r *partnerRepository) GetPartnerRewards(partnerID int) ([]models.Reward, e
 // GetBookings ดึงข้อมูลการจองของ partner
 func (r *partnerRepository) GetBookings(partnerID int) ([]models.Booking, error) {
 	var bookings []models.Booking
-	rows, err := r.db.Query("SELECT id, concert_id, booking_at, booking_date, amount FROM bookings WHERE partner_id = $1", partnerID)
+	rows, err := r.db.Query(`
+		SELECT id, concert_id, partner_id, tickets, amount, booking_at, date 
+		FROM bookings 
+		WHERE partner_id = $1`, partnerID)
+
 	if err != nil {
 		return nil, fmt.Errorf("error fetching bookings for partner %d: %w", partnerID, err)
 	}
@@ -112,7 +116,15 @@ func (r *partnerRepository) GetBookings(partnerID int) ([]models.Booking, error)
 
 	for rows.Next() {
 		var booking models.Booking
-		if err := rows.Scan(&booking.ID, &booking.ConcertID, &booking.BookingAt, &booking.BookingDate, &booking.Amount); err != nil {
+		if err := rows.Scan(
+			&booking.ID,
+			&booking.ConcertID,
+			&booking.PartnerID,
+			&booking.Tickets,
+			&booking.Amount,
+			&booking.BookingAt,
+			&booking.BookingDate,
+		); err != nil {
 			return nil, fmt.Errorf("error scanning booking data for partner %d: %w", partnerID, err)
 		}
 		bookings = append(bookings, booking)

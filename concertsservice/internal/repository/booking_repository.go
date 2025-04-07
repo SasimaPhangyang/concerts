@@ -2,12 +2,13 @@ package repository
 
 import (
 	"concerts/internal/models"
+	"context"
 	"database/sql"
 	"fmt"
 )
 
 type BookingRepository interface {
-	GetBookings(partnerID int) ([]models.Booking, error)
+	GetBookings(ctx context.Context, partnerID int) ([]models.Booking, error)
 }
 
 type bookingRepository struct {
@@ -19,9 +20,13 @@ func NewBookingRepository(db *sql.DB) BookingRepository {
 }
 
 // GetBookings ดึงข้อมูลการจองของ partner
-func (r *bookingRepository) GetBookings(partnerID int) ([]models.Booking, error) {
+func (r *bookingRepository) GetBookings(ctx context.Context, partnerID int) ([]models.Booking, error) {
 	var bookings []models.Booking
-	rows, err := r.db.Query("SELECT id, concert_id, booking_at, booking_date, amount FROM bookings WHERE partner_id = $1", partnerID)
+
+	query := `SELECT id, concert_id, partner_id, tickets, amount, booking_at, date
+	          FROM bookings WHERE partner_id = ?`
+
+	rows, err := r.db.QueryContext(ctx, query, partnerID)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching bookings for partner %d: %w", partnerID, err)
 	}
@@ -29,9 +34,8 @@ func (r *bookingRepository) GetBookings(partnerID int) ([]models.Booking, error)
 
 	for rows.Next() {
 		var booking models.Booking
-		// สแกนค่าลงในฟิลด์ต่างๆ ของ Booking struct
-		if err := rows.Scan(&booking.ID, &booking.ConcertID, &booking.BookingAt, &booking.BookingDate, &booking.Amount); err != nil {
-			return nil, fmt.Errorf("error scanning booking data for partner %d: %w", partnerID, err)
+		if err := rows.Scan(&booking.ID, &booking.ConcertID, &booking.PartnerID, &booking.Tickets, &booking.Amount, &booking.BookingAt, &booking.BookingDate); err != nil {
+			return nil, fmt.Errorf("error scanning booking row for partner %d: %w", partnerID, err)
 		}
 		bookings = append(bookings, booking)
 	}
