@@ -3,7 +3,7 @@ package service
 import (
 	"concerts/internal/models"
 	"concerts/internal/repository"
-	"context"
+
 	"errors"
 	"fmt"
 )
@@ -19,20 +19,22 @@ type PartnerService interface {
 
 type partnerService struct {
 	partnerRepo  repository.PartnerRepository
-	bookingRepo  repository.BookingRepository
 	withdrawRepo repository.WithdrawRepository
 }
 
-func NewPartnerService(partnerRepo repository.PartnerRepository, bookingRepo repository.BookingRepository, withdrawRepo repository.WithdrawRepository) PartnerService {
+func NewPartnerService(partnerRepo repository.PartnerRepository, withdrawRepo repository.WithdrawRepository) PartnerService {
 	return &partnerService{
 		partnerRepo:  partnerRepo,
-		bookingRepo:  bookingRepo,
 		withdrawRepo: withdrawRepo,
 	}
 }
 
 func (s *partnerService) GetPartnerBalance(partnerID int) (float64, error) {
-	return s.partnerRepo.GetPartnerBalance(partnerID)
+	balance, err := s.partnerRepo.GetPartnerBalance(partnerID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to fetch partner balance: %w", err)
+	}
+	return balance, nil
 }
 
 func (s *partnerService) GetAutoWithdrawSetting(partnerID int) (models.AutoWithdraw, error) {
@@ -83,7 +85,7 @@ func (s *partnerService) GetPartnerRewards(partnerID int) ([]models.Reward, erro
 }
 
 func (s *partnerService) GetBookings(partnerID int) ([]models.Booking, error) {
-	bookings, err := s.bookingRepo.GetBookings(context.Background(), partnerID)
+	bookings, err := s.partnerRepo.GetBookings(partnerID)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching bookings for partner %d: %w", partnerID, err)
 	}

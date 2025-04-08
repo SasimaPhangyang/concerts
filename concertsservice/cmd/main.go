@@ -32,9 +32,8 @@ func main() {
 	commissionRepo := repository.NewCommissionRepository(db)
 	reportRepo := repository.NewReportRepository(db)
 	partnerRepo := repository.NewPartnerRepository(db)
-	bookingRepo := repository.NewBookingRepository(db)
 	withdrawRepo := repository.NewWithdrawRepository(db)
-	authRepo := repository.NewAuthRepository(db)
+	//authRepo := repository.NewAuthRepository(db)
 
 	// Service
 	userService := service.NewUserService(userRepo)
@@ -43,8 +42,8 @@ func main() {
 	contentTemplateService := service.NewContentTemplateService(contentTemplateRepo)
 	commissionService := service.NewCommissionService(commissionRepo)
 	reportService := service.NewReportService(reportRepo)
-	partnerService := service.NewPartnerService(partnerRepo, bookingRepo, withdrawRepo)
-	authService := service.NewAuthService(authRepo, cfg.JWTSecret)
+	partnerService := service.NewPartnerService(partnerRepo, withdrawRepo)
+	//authService := service.NewAuthService(authRepo, cfg.JWTSecret)
 
 	// Handler
 	userHandler := handler.NewUserHandler(userService)
@@ -54,7 +53,7 @@ func main() {
 	commissionHandler := handler.NewCommissionHandler(commissionService)
 	reportHandler := handler.NewReportHandler(reportService)
 	partnerHandler := handler.NewPartnerHandler(partnerService, withdrawRepo)
-	authHandler := handler.NewAuthHandler(authService)
+	//authHandler := handler.NewAuthHandler(authService)
 
 	// สร้าง Router
 	r := gin.Default()
@@ -69,12 +68,12 @@ func main() {
 	})
 
 	// Auth API (No Auth)
-	auth := r.Group("/api/v1/auth")
+	//auth := r.Group("/api/v1/auth")
 	{
-		auth.POST("/internal/register", authHandler.Register)
-		auth.POST("/internal/login", authHandler.Login)
-		auth.GET("/internal/validate-token", middleware.JWTAuth(authService), authHandler.ValidateToken)
-		auth.POST("/internal/logout", middleware.JWTAuth(authService), authHandler.Logout)
+		//auth.POST("/internal/register", authHandler.Register)
+		//auth.POST("/internal/login", authHandler.Login)
+		//auth.GET("/internal/validate-token", middleware.JWTAuth(authService), authHandler.ValidateToken)
+		//auth.POST("/internal/logout", middleware.JWTAuth(authService), authHandler.Logout)
 	}
 
 	// Protected routes ต้องใช้ Bearer Token
@@ -96,14 +95,15 @@ func main() {
 		protected.GET("/external/commissions/:partner_id", commissionHandler.GetCommissions) //
 
 		protected.GET("/external/partner/rewards/:partner_id", partnerHandler.GetPartnerRewards) //
-		protected.GET("/external/partner/bookings/:partner_id", partnerHandler.GetBookings)
+		protected.GET("/external/partner/bookings/:partner_id", partnerHandler.GetBookings)      //
 
-		protected.GET("/external/reports/sales", reportHandler.GetSalesReport)
+		protected.GET("/external/reports/sales", reportHandler.GetSalesReport) //
+		//http://localhost:8080/api/v1/external/reports/sales?product=Concert 1 Ticket
 		protected.GET("/external/reports/sales-by-source", reportHandler.GetSalesBySource) //
 
-		protected.GET("/external/partner/balance/:partner_id", partnerHandler.GetPartnerBalance)
+		protected.GET("/external/partner/balance/:partner_id", partnerHandler.GetPartnerBalance) //
 		protected.POST("/external/partner/auto-withdraw/:partner_id", partnerHandler.SetAutoWithdraw)
-		protected.POST("/external/partner/request-withdrawal/:partner_id", partnerHandler.CreateWithdrawRequest)
+		protected.POST("/external/partner/request-withdrawal/:partner_id", partnerHandler.CreateWithdrawRequest) //
 
 	}
 

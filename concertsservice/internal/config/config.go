@@ -12,7 +12,7 @@ type Config struct {
 	DBName     string
 	APIToken   string
 	APIPORT    string
-	JWTSecret  string
+	//JWTSecret  string
 }
 
 func LoadConfig() Config {
@@ -24,7 +24,7 @@ func LoadConfig() Config {
 		DBName:     getEnv("DB_NAME", "postgres"),
 		APIToken:   getEnv("API_TOKEN", "fjwfji3399"),
 		APIPORT:    getEnv("API_PORT", "80"),
-		JWTSecret:  getEnv("JWT_SECRET", "mysecret"), // เพิ่มตรงนี้
+		//JWTSecret:  getEnv("JWT_SECRET", "mysecret"),
 	}
 }
 

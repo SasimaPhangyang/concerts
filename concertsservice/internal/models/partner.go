@@ -2,11 +2,6 @@ package models
 
 import "time"
 
-// AutoWithdrawRequest คือการร้องขอการตั้งค่าการถอนอัตโนมัติ
-type AutoWithdrawRequest struct {
-	Enabled bool `json:"enabled"` // ใช้ bool เพื่อระบุสถานะการเปิด/ปิดการถอนอัตโนมัติ
-}
-
 // PartnerReward คือข้อมูลรางวัลที่ได้รับจากพาร์ทเนอร์
 type PartnerReward struct {
 	RewardID  int       `json:"reward_id"`  // รหัสรางวัล

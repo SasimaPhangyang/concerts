@@ -23,13 +23,12 @@ func NewPartnerRepository(db *sql.DB) PartnerRepository {
 	return &partnerRepository{db: db}
 }
 
-// GetPartnerBalance ดึงข้อมูล balance ของ partner จากฐานข้อมูล
 func (r *partnerRepository) GetPartnerBalance(partnerID int) (float64, error) {
 	var balance float64
-	err := r.db.QueryRow("SELECT balance FROM partners WHERE id=$1", partnerID).Scan(&balance)
-
+	query := `SELECT balance FROM partner_balances WHERE partner_id = $1`
+	err := r.db.QueryRow(query, partnerID).Scan(&balance)
 	if err != nil {
-		return 0, fmt.Errorf("error fetching balance for partner %d: %w", partnerID, err)
+		return 0, err
 	}
 	return balance, nil
 }

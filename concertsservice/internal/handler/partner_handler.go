@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"concerts/internal/models"
 	"concerts/internal/repository"
 	"concerts/internal/service"
 	"net/http"
@@ -22,20 +23,19 @@ func NewPartnerHandler(service service.PartnerService, withdrawRepo repository.W
 }
 
 func (h *PartnerHandler) GetPartnerBalance(c *gin.Context) {
-	partnerIDstr := c.Param("partner_id")
-	partnerID, err := strconv.Atoi(partnerIDstr)
+	partnerID, err := strconv.Atoi(c.Param("partner_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid partner_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid partner ID"})
 		return
 	}
 
-	balance, err := h.Service.GetPartnerBalance(partnerID)
+	balance, err := h.Service.GetPartnerBalance(partnerID) // ไม่มี ctx แล้ว
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch partner balance"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, balance)
+	c.JSON(http.StatusOK, gin.H{"balance": balance})
 }
 
 func (h *PartnerHandler) GetBookings(c *gin.Context) {
@@ -44,19 +44,6 @@ func (h *PartnerHandler) GetBookings(c *gin.Context) {
 	partnerID, err := strconv.Atoi(partnerIDstr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid partner_id"})
-		return
-	}
-
-	// ดึง partner_user_id จาก context ที่ตรวจสอบ JWT token
-	partnerUserID, exists := c.Get("partner_user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Partner user ID not found in context"})
-		return
-	}
-
-	// ตรวจสอบว่า partner_user_id ตรงกับ partner_id ใน URL หรือไม่
-	if partnerUserID.(int) != partnerID {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Invalid partner user ID"})
 		return
 	}
 
@@ -88,27 +75,25 @@ func (h *PartnerHandler) GetPartnerRewards(c *gin.Context) {
 }
 
 func (h *PartnerHandler) SetAutoWithdraw(c *gin.Context) {
-	partnerIDstr := c.Param("partner_id")
-	partnerID, err := strconv.Atoi(partnerIDstr)
+	partnerID, err := strconv.Atoi(c.Param("partner_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid partner_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid partner ID"})
 		return
 	}
 
-	enabledStr := c.PostForm("enabled")
-	enabled, err := strconv.ParseBool(enabledStr)
-	if err != nil {
+	var req models.AutoWithdraw
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enabled flag"})
 		return
 	}
 
-	err = h.Service.SetAutoWithdraw(partnerID, enabled)
+	err = h.Service.SetAutoWithdraw(partnerID, req.Enabled)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set auto withdrawal"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "Auto withdrawal set successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Auto-withdraw updated"})
 }
 
 // CreateWithdrawRequest สร้างการถอนเงิน

@@ -185,8 +185,8 @@ EXECUTE FUNCTION update_users_modtime();
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_name ON users(name);
 
--- ตาราง register
-CREATE TABLE partner_users (
+-- Table สำหรับเก็บ user
+CREATE TABLE datauser( 
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
@@ -195,15 +195,32 @@ CREATE TABLE partner_users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-
---ตาราง token
+-- Table สำหรับเก็บ token
 CREATE TABLE tokens (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES partner_users(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES datauser(id) ON DELETE CASCADE,
     token TEXT NOT NULL UNIQUE,
-    is_valid BOOLEAN DEFAULT TRUE,
+    is_valid BOOLEAN DEFAULT TRUE, -- ถ้า logout หรือ revoke จะ set false
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expired_at TIMESTAMP
+    expired_at TIMESTAMP NOT NULL -- JWT หรือ token หมดอายุ
+);
+
+-- Index ช่วยเรื่อง performance
+CREATE INDEX idx_tokens_user_id ON tokens(user_id);
+CREATE INDEX idx_tokens_token ON tokens(token);
+
+CREATE TABLE logs (
+    id SERIAL PRIMARY KEY,
+    client_id INT NOT NULL,
+    endpoint TEXT NOT NULL,
+    method TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES datauser(id)
+);
+
+CREATE TABLE data (
+    id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL
 );
 
 -- -----------------------------
@@ -262,10 +279,12 @@ INSERT INTO auto_withdraw (partner_id, enabled)
 SELECT 1, TRUE
 WHERE NOT EXISTS (SELECT 1 FROM auto_withdraw WHERE partner_id = 1);
 
-INSERT INTO partner_users (email, password, name, phone)
-VALUES 
-('sandta@example.com', 'sandta_password_123', 'sandta', '0812345678');
 
-INSERT INTO tokens (user_id, token, is_valid, expired_at)
-VALUES 
-(1, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', TRUE, '2025-12-31 23:59:59');
+INSERT INTO datauser (email, password, name, phone)
+VALUES ('sandta@example.com', 'sandta_password_123', 'sandta', '0812345678')
+RETURNING id;
+
+INSERT INTO tokens (user_id, token, expired_at)
+VALUES (1, 'generated-jwt-token', NOW() + INTERVAL '1 day')
+RETURNING id;
+
